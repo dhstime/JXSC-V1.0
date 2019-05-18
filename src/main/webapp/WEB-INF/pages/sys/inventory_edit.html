@@ -1,0 +1,127 @@
+<!-- Horizontal Form -->
+<div class="box box-info">
+	<div class="box-header with-border">
+		<h3 class="box-title">添加库存</h3>
+	</div>
+	<!-- /.box-header -->
+	<!-- form start -->
+	<form class="form-horizontal">
+		<div class="box-body">
+			<!-- <div class="form-group">
+            <label for="inventoryId" class="col-sm-2 control-label">库存序号</label>
+
+            <div class="col-sm-10">
+              <input type="text" class="form-control" name="inventory" id="inventoryId" placeholder="库存序号">
+            </div>
+          </div> -->
+			<div class="form-group">
+				<label for="productId" class="col-sm-2 control-label">商品编号</label>
+
+				<div class="col-sm-10">
+					<input type="text" class="form-control" name="product"
+						id="productId" placeholder="商品编号">
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="countId" class="col-sm-2 control-label">库存数量</label>
+
+				<div class="col-sm-10">
+					<input type="text" class="form-control" name="currentcount"
+						id="countId" placeholder="库存数量">
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="volumeId" class="col-sm-2 control-label">销量</label>
+
+				<div class="col-sm-10">
+					<input type="text" class="form-control" name="salesvolume"
+						id="volumeId" placeholder="销量">
+				</div>
+			</div>
+
+			<!--  <div class="form-group">
+				<label class="col-sm-2 control-label">授权</label>
+				<div class="col-sm-10">
+						<ul id="menuTree" class="ztree"></ul>
+				</div>
+		  </div> -->
+		</div>
+		<!-- /.box-body -->
+		<div class="box-footer">
+			<button type="button" class="btn btn-default btn-cancel">Cancel</button>
+			<button type="button" class="btn btn-info pull-right btn-save">Save</button>
+		</div>
+		<!-- /.box-footer -->
+	</form>
+</div>
+<script type="text/javascript"
+	src="bower_components/ztree/jquery.ztree.all.min.js"></script>
+<script type="text/javascript">
+	$(function() {
+		//异步加载菜单信息,初始化页面菜单
+		$(".box-footer").on("click", ".btn-save", doSaveOrUpdate).on("click",".btn-cancel", doCancel);
+		doInitEditFormData() ;
+		
+	});
+	function doInitEditFormData() {
+		var data = $("#mainContentId").data("data");
+		console.log( data);
+		//1.初始化角色自身信息
+		$("#productId").attr("placeholder",data.productId);
+		$("#countId").attr("placeholder",data.currentCount);
+		$("#volumeId").attr("placeholder",data.salesVolume);
+	}
+	function doCancel() {
+		console.log("取消");
+		var url = "inventory/doInventoryListUI.do";
+		$("#mainContentId").load(url, function() {
+			$("#mainContentId").removeData();
+		});
+	}
+
+	function doSaveOrUpdate() {
+		console.log("保存");
+		//1.参数(表单数据)
+		var params = doGetEditFormData();
+		if (!params.productId.trim()) {
+			alert("商品编号不能为空")
+			return;
+		}
+		var data = $("#mainContentId").data("data");
+		if (data)
+			params.id = data.id;
+		//2.url
+		var insertUrl = "inventory/doSaveObject.do";
+		var updateUrl = "inventory/doUpdateObject.do";
+		var url = data ? updateUrl : insertUrl;
+		//3.ajax request
+		$.post(url, params, function(result) {
+			if (result.state == 1) {
+				alert(result.message);
+				doCancel();
+			} else {
+				alert(result.message);
+			}
+		})
+	}
+	function doGetEditFormData() {
+		//1.获取角色自身信息
+		var params = {
+			/* id:$("#inventoryId").val(), */
+			productId : $("#productId").val(),
+			currentCount : $("#countId").val(),
+			salesVolume : $("#volumeId").val(),
+		}
+
+		return params;
+	}
+	
+	
+</script>
+
+
+
+
+
+
+

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans default-lazy-init="true"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation="  
+       http://www.springframework.org/schema/beans   
+       http://www.springframework.org/schema/beans/spring-beans-4.3.xsd  
+       http://www.springframework.org/schema/mvc   
+       http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd   
+       http://www.springframework.org/schema/tx   
+       http://www.springframework.org/schema/tx/spring-tx-4.3.xsd   
+       http://www.springframework.org/schema/aop 
+       http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+       http://www.springframework.org/schema/util 
+       http://www.springframework.org/schema/util/spring-util-4.3.xsd
+       http://www.springframework.org/schema/data/jpa 
+       http://www.springframework.org/schema/data/jpa/spring-jpa-1.3.xsd
+       http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<!--启用mvc默认配置(内置一部分bean对象的定义) -->
+	<mvc:annotation-driven />  <!-- GetMapping可能会对底层异常进行了处理 -->
+	<!-- 没有此,就没有API对象,会出406:not Acception,没有bean将对象转为json串 -->
+	<!--注册视图解析对象 -->
+	<!-- 此处依赖servlet,要么有servlet依赖,要么有运行时环境 -->
+	<bean id="viewResovler"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="Prefix" value="/WEB-INF/pages/" />
+		<property name="Suffix" value=".html" />
+	</bean>
+	<!-- 配置springmvc 的拦截器 -->
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/user/doLogin.do" />
+			<ref bean="handlerAccessInterceptor" />
+		</mvc:interceptor>
+	</mvc:interceptors>
+	
+	<bean id="txManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	<!--设置注解驱动的事务管理 -->
+	<tx:annotation-driven
+		transaction-manager="txManager" />
+</beans>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jx.dao.JxOrderDao">
+	<resultMap id="JxOrder01" type="com.jx.entity.JxOrder">
+		<id column="id" property="id"/>
+		<result column="user_name" property="userName"/>
+		<result column="type" property="type"/>
+		<result column="trade_name" property="tradeName"/>
+		<result column="add_time" property="addTime"/>
+		<result column="purchase_quantity" property="purchaseQuantity"/>
+		<result column="pay_time" property="payTime"/>
+		<result column="pay_type" property="payType"/>
+		<result column="price" property="price"/>
+		<result column="distribution_loading" property="distributionLoading"/>
+		<result column="order_status" property="orderStatus"/>
+	</resultMap>
+	
+	<select id="findPageObjects" resultMap="JxOrder01">
+		select * 
+		from order_table
+		<include refid="queryWhereId"/>
+		limit #{startIndex},#{pageSize}
+	</select>
+	
+	<select id="getRowCount" resultType="int">
+		select count(*)
+		from order_table
+		<include refid="queryWhereId"/>
+	</select>
+	
+	<delete id="deleteObjects">
+		delete from order_table
+		where id in
+		<foreach collection="ids"
+                open="("
+                close=")"
+                separator=","
+                item="id">
+               #{id} 
+        </foreach>
+	</delete>
+	
+	<insert id="insertObject" 
+			parameterType="com.jx.entity.JxOrder">
+		insert into order_table
+		values
+		(#{id},#{userName},#{type},#{tradeName},now(),#{purchaseQuantity},now(),#{payType},#{price},#{distributionLoading},#{orderStatus})
+	</insert>
+	
+	<sql id="queryWhereId">
+          <where>
+            <if test="userName!=null and userName!=''">
+               user_name like concat("%",#{userName},"%")
+            </if>
+          </where>
+    </sql>
+	
+	<select id="findObjectById"
+           parameterType="int"
+           resultMap="JxOrder01">
+           select * 
+           from order_table   
+           where id=#{id}     
+   </select>
+   
+   
+   <update id="updateObject" parameterType="com.jx.entity.JxOrder">
+          update order_table
+          <set>
+             <if test="userName!=null and userName!=''">
+               user_name=#{userName},
+             </if>
+             <if test="type!=null and type!=''">
+                  type=#{type},
+             </if>
+             <if test="tradeName!=null and tradeName!=''">
+                trade_name=#{tradeName},
+             </if>
+			 <if test="addTime!=null and addTime!=''">
+                add_time=#{addTime},
+             </if>
+             <if test="purchaseQuantity!=null and purchaseQuantity!=''">
+                purchase_quantity=#{purchaseQuantity},
+             </if>
+             <if test="payTime!=null and payTime!=''">
+                pay_time=#{payTime},
+             </if>
+             <if test="payType!=null and payType!=''">
+                pay_type=#{payType},
+             </if>
+             <if test="price!=null and price!=''">
+                price=#{price},
+             </if>
+             <if test="distributionLoading!=null and distributionLoading!=''">
+                distribution_loading=#{distributionLoading},
+             </if>
+             <if test="orderStatus!=null and orderStatus!=''">
+                order_status=#{orderStatus}
+             </if>
+          </set>
+          where id=#{id}      
+   </update>
+	
+</mapper>

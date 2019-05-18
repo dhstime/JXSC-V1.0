@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jx.dao.SysProductDao">
+	<!-- 负责基于条件查询当前页数据 品牌  -->
+	<resultMap type="com.jx.entity.SysProduct" id="findPro">
+        <id column="id" property="id"/>
+		<result column="brand" property="brand"/>
+		<result column="trade_name" property="tradeName"/>
+		<result column="message" property="message"/>
+		<result column="price" property="price"/>
+		<result column="color" property="color"/>
+		<result column="status" property="status"/>
+        
+        
+    </resultMap>
+    
+	<update id="deleteObjectByProductId">
+		delete from inventory_table where product_id=#{id}
+	</update>
+	<select id="findPageObjects" resultMap="findPro">
+		select * from product_table 
+		<include refid="queryWhereId"></include>
+		limit #{startIndex},#{pageSize}
+	</select>
+	<select id="getRowCount" resultType="int">
+		select count(*)
+		from product_table
+		<include refid="queryWhereId"></include>		
+	</select>
+	<!-- 新增商品信息 -->
+	<insert id="insertProductObject"
+		parameterType="com.jx.entity.SysProduct" useGeneratedKeys="true"
+		keyProperty="id">
+		insert into product_table
+		(id,brand,trade_name,message,price,color,status)
+		values
+		(#{id},#{brand},#{tradeName},#{message},#{price},#{color},#{status})
+	</insert>
+	
+	<!--修改商品信息之前查找商品信息 -->
+	<select id="findObjectById" parameterType="int"
+		resultMap="findPro">
+		select * from product_table where id=#{id}
+	</select>
+	<!-- 修改商品信息 -->
+	<update id="updateObject">
+		update product_table
+		<set>
+			
+			<if test="brand!=null and brand!=''">
+				brand=#{brand},
+			</if>
+			<if test="tradeName!=null and tradeName!=''">
+				trade_name=#{tradeName},
+			</if>
+			<if test="message!=null and message!=''">
+				message=#{message},
+			</if>
+
+			<if test="price!=null and price!=''">
+				price=#{price},
+			</if>
+			<if test="color!=null and color!=''">
+				color=#{color},
+			</if>
+			<!-- <if test="status!=null and status!=''"> -->
+			status=#{status},
+			<!-- </if> -->
+		</set>
+		where id=#{id}
+	</update>
+	<delete id="deleteObject">
+        delete from product_table
+        where id=#{id}
+       
+    </delete>
+   
+    
+	<!-- 借助此元素对共性数据进行提取 -->
+    <sql id="queryWhereId">
+          <where>
+            <if test="brand!=null and brand!=''">
+               brand like concat("%",#{brand},"%")
+            </if>
+          </where>
+    </sql>
+	
+</mapper>

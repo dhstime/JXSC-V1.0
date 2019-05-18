@@ -1,0 +1,272 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">商品菜单</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="品牌">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+								<i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-add">添加</button>
+							<!-- <button type="button" class="btn btn-default btn-update">修改</button> -->
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>编号</th>
+							<th>品牌</th>
+							<th>型号</th>
+							<th>详情</th>
+							<th>价格</th>
+							<th>颜色</th>
+							<th>状态</th>
+							<th>详情</th>
+							<th>删除</th>
+							<th>修改</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId"></tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix"></div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+	$(document).ready(
+			function() {
+				$("#pageId").load("doPageUI.do", function() {
+					doGetObjects();
+				});
+				$(".input-group-btn")
+						.on("click", ".btn-search", doQueryObjects).on("click",
+								".btn-add", dosave);
+
+				$("tbody").on("click", ".btn-detail", doLoadEditUI).on("click",
+						".btn-delete", doDeleteObject).on("click",".btn-update",domodification);
+			});
+	function doDeleteObject() {
+		//debugger
+		//1.获取选中的id
+		var idArray = doGetCheckedId();
+
+		if (!idArray) {
+			alert("请先选择");
+			return;
+		}
+		//格式固定
+		console.log("idArray", idArray);
+		//2.确认是否删除-->确认
+		if (!confirm("确认删除吗"))
+			return;
+		var params = {
+			"id" : idArray
+		};
+		//url-->控制层要执行的方法
+		var url = "product/doDeleteObject.do";
+
+		//3.异步执行删除操作
+		$.post(url, params, function(result) {
+			if (result.state == 1) {
+				alert(result.message);
+				//当最后一页删除之后,显示上一页
+				doSetPageCurrent();
+
+				//$("#checkAll").prop("checked",false);
+				//刷新
+				doGetObjects();
+			} else {
+				alert(result.message);
+			}
+		})
+	}
+	//当最后一页删除完之后,需要显示上一页
+	function doSetPageCurrent() {
+		var pageCount = $("#pageId").data("pageCount");
+		var pageCurrent = $("#pageId").data("pageCurrent");
+		var checked = $("#checkOne").prop("checked");
+		if (pageCurrent == pageCount && checked && pageCurrent > 1) {
+			pageCurrent--;
+			$("#pageId").data("pageCurrent", pageCurrent);
+		}
+	}
+	function dosave(){
+		var title;
+		if ($(this).hasClass("btn-add")) {
+			title = "添加商品";
+			doLoadPage(title);
+		}
+	}
+	function doLoadEditUI() {
+		//1.判定点击的对象
+		 var title;
+		
+		if ($(this).hasClass("btn-detail")) {
+			title = "商品";
+			var id =doGetCheckedId();
+			console.log("id=" + id)
+			if (!id) {
+				alert("请先选择");
+				return;
+			}
+			//1.params
+			var params = {
+				"id" : id
+			};
+			//2.url
+			var url = "product/doFindObjectById.do";
+			//3.ajax request
+			$.getJSON(url, params, function(result) {//JsonResult
+				if (result.state == 1) {
+					$("#mainContentId").data("rowData", result.data);
+					var url = "product/doDetailObject.do"
+					$("#mainContentId").load(url, function() {
+						$(".box-title").html(title);
+					})
+				} else {
+					alert(result.message);
+				}
+			});
+		} 
+			doFindObjectById(id, title);
+		}
+	
+	function domodification(){
+		title = "修改商品";
+		var id =doGetCheckedId();
+		console.log("id=" + id)
+		if (!id) {
+			alert("请先选择");
+			return;
+		}
+		doFindObjectById(id, title);
+	}
+	function doFindObjectById(id, title) {
+		//1.params
+		var params = {
+			"id" : id
+		};
+		//2.url
+		var url = "product/doFindObjectById.do";
+		//3.ajax request
+		$.getJSON(url, params, function(result) {//JsonResult
+			if (result.state == 1) {
+				$("#mainContentId").data("rowData", result.data);
+				doLoadPage(title);
+			} else {
+				alert(result.message);
+			}
+		});
+	}
+
+	function doGetCheckedId() {
+		/* var data=$(this).parents("tr").data("data");
+		cnsole.log(data);
+		var id = data.id; */
+		/* var id =$(this).parents("tr td").first().text();
+		console.log(id);
+		return id; */
+		return $("tbody input[name='radioId']:checked").val(); 
+	}
+	function doLoadPage(title) {
+		var url = "product/doProductEditUI.do"
+		$("#mainContentId").load(url, function() {
+			$(".box-title").html(title);
+		})
+	}
+	
+	
+	//处理查询按钮事件
+	function doQueryObjects() {
+		$("#pageId").data("pageCurrent", 1);
+		doGetObjects();
+	}
+	//页面加载完成异步加载当前页数据
+	function doGetObjects() {
+
+		var url = "product/doFindProductObjects.do";
+		var pageCurrent = $("#pageId").data("pageCurrent");
+		if (!pageCurrent)
+			pageCurrent = 1;
+		var params = {
+			"pageCurrent" : pageCurrent
+		}
+		params.brand = $("#searchNameId").val().trim();
+		console.log(params);
+		$.getJSON(url, params, function(result) {
+			console.log(result);
+			doHandleResponseResult(result);
+		});
+	}
+	function doHandleResponseResult(result) {
+		if (result.state == 1) {
+			doSetTableBodyRows(result.data.records);
+			doSetPagination(result.data);
+		} else {
+			alert(result.message);
+		}
+	}
+	//通过服务端返回的数据初始化页面
+	function doSetTableBodyRows(records) {
+		//1.获取tbody对象，并清空内容
+		var tBody = $("#tbodyId");
+		tBody.empty();
+
+		//2.将记录records进行呈现
+		//2.1迭代记录集
+		for (var i = 0; i < records.length; i++) {
+			//2.2 创建tr对象<tr></tr>如果少了/,则创建了<tr></tr><tr></tr>
+			var tr = $("<tr></tr>");
+			//2.3 创建多个td对象
+			var tds = doCreateTds(records[i]);
+			//2.4 将td对象追加到tr中
+			tr.append(tds);
+			//2.5 将tr追加到tbody中
+			tBody.append(tr);
+		}
+	}
+	function doCreateTds(data) {
+	/* 	console.log(data); */
+		var tds ="<td><input type='radio' id='checkOne' name='radioId' value='"+data.id+"' ></td>"
+				+ "<td>"
+				+ data.brand
+				+ "</td>"
+				+ "<td>"
+				+ data.tradeName
+				+ "</td>"
+				+ "<td>"
+				+ data.message
+				+ "</td>"
+				+ "<td>"
+				+ data.price
+				+ "</td>"
+				+ "<td>"
+				+ data.color
+				+ "</td>"
+				+ "<td>"
+				+ (data.status ? "上线" : "下线")
+				+ "</td>"
+				+ "<td><button type='button' class='btn btn-default btn-detail'>"+ "详情"+ "</button></td>"
+				+ "<td><button type='button' class='btn btn-default btn-delete'>"+ "删除" + "</button></td>"
+				+"<td><button type='button' class='btn btn-default btn-update'>"+"修改"+"</button></td>";
+		return tds;
+	}
+</script>
+
+
+
+
+

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans default-lazy-init="true"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xsi:schemaLocation="  
+       http://www.springframework.org/schema/beans   
+       http://www.springframework.org/schema/beans/spring-beans-4.3.xsd  
+       http://www.springframework.org/schema/mvc   
+       http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd   
+       http://www.springframework.org/schema/tx   
+       http://www.springframework.org/schema/tx/spring-tx-4.3.xsd   
+       http://www.springframework.org/schema/aop 
+       http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+       http://www.springframework.org/schema/util 
+       http://www.springframework.org/schema/util/spring-util-4.3.xsd
+       http://www.springframework.org/schema/data/jpa 
+       http://www.springframework.org/schema/data/jpa/spring-jpa-1.3.xsd
+       http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<bean id="securityManager"
+		class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="Realm" ref="shiroUserRealm" />
+		<property name="CacheManager" ref="cacheManager" />
+		<!-- 配置记住我 -->
+		<property name="rememberMeManager" ref="rememberMeManager" />
+	</bean>
+
+	<!-- 记住密码Cookie -->
+	<bean id="rememberMeCookie"
+		class="org.apache.shiro.web.servlet.SimpleCookie">
+		<constructor-arg value="rememberMe" />
+		<property name="httpOnly" value="true" />
+		<!-- 7天,采用spring el表达式来计算，方便修改 -->
+		<property name="maxAge" value="600" />
+	</bean>
+
+	<!-- rememberMe管理器,cipherKey生成见{@code Base64Test.java} -->
+	<bean id="rememberMeManager"
+		class="org.apache.shiro.web.mgt.CookieRememberMeManager">
+		<property name="cookie" ref="rememberMeCookie" />
+	</bean>
+
+	<bean id="shiroFilterFactory"
+		class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="SecurityManager" ref="securityManager" />
+		<property name="LoginUrl" value="/doLoginUI.do" /> <!-- 登陆页面配置 -->
+		<!-- 设置请求过滤规则 -->
+		<property name="FilterChainDefinitionMap">
+			<map>
+				<entry key="/bower_components/**" value="anon" /> <!-- anon允许匿名访问 -->
+				<entry key="/build/**" value="anon" />
+				<entry key="/dist/**" value="anon" />
+				<entry key="/plugins/**" value="anon" />
+				<entry key="/user/doLogin.do" value="anon" /> <!-- 允许匿名访问登陆 -->
+				<!-- <entry key="/doIndexUI.do" value="user" /> --><!-- 允许记住我登陆 -->
+				<entry key="/doLogout.do" value="logout" /> <!-- 允许匿名登出 -->
+				<!-- <entry key="/**" value="authc" /> --><!-- 必须认证,包括controller中写的请求路径 -->
+				<entry key="/**" value="user" /><!-- 记住我,设置为user -->
+			</map>
+		</property>
+	</bean>
+
+	<!-- 会话管理器 -->
+	<bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager"> 
+		<!-- 设置超时时间 -->
+		<property name="globalSessionTimeout" value="1800000" /> 
+		<!-- <property name="deleteInvalidSessions" value="true" /> 
+		<property name="sessionValidationSchedulerEnabled" value="true" /> 
+		<property name="sessionIdCookieEnabled" value="true" /> 
+		 -->
+	</bean>
+
+	<bean id="cacheManager"
+		class="org.apache.shiro.cache.MemoryConstrainedCacheManager" />
+
+	<!-- 配置shiro的授权实现 -->
+	<!-- 配置bean对象的生命周期管理,管理代理对象的生命周期 -->
+	<bean id="lifecycleBeanPostProcessor"
+		class="org.apache.shiro.spring.LifecycleBeanPostProcessor">
+	</bean>
+
+	<!-- 配置Bean对象的代理,创建代理对象 -->
+	<bean
+		class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+		depends-on="lifecycleBeanPostProcessor">
+	</bean>
+
+	<!-- 配置授权属性,检测访问的方法上是否有需要检测的注解,有:获取注解内容给securityManager -->
+	<bean
+		class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="SecurityManager" ref="securityManager" />
+	</bean>
+</beans>

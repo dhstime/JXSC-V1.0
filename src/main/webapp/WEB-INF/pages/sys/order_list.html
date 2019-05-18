@@ -1,0 +1,258 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">订单管理</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="用户名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-update">修改</button>
+							<button type="button" class="btn btn-default btn-delete">删除</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>用户名</th>
+							<th>商品类型</th>
+							<th>商品名</th>
+							<th>下单时间</th>
+							<th>购买数量</th>
+							<th>支付时间</th>
+							<th>支付类型(微信?支付宝)</th>
+							<th>商品价格</th>
+							<th>配送(快递)</th>
+							<th>配送状态</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId"></tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix">
+			</div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+$(function(){
+	  $("#pageId").load("doPageUI.do",function(){
+		  doGetObjects();
+	  });
+	  $(".input-group-btn")
+	  .on("click",".btn-search",doQueryObjects)
+	  .on("click",".btn-update",doLoadEditUI)
+	  .on("click", ".btn-delete",doDeleteObjects)
+	  
+ });
+
+   //点击查询按钮时执行分页查询操作
+   function doQueryObjects() {
+	//debugger
+	console.log("doQueryObjects()");
+	//1.设置当前页码值
+	$("#pageId").data("pageCurrent", 1);
+	//2.执行查询操作
+	doGetObjects();
+}
+   
+
+function doGetObjects() {
+	$("#checkAll").prop("checked", false);
+	//1.url
+	var url = "order/doFindPageObjects.do";
+	//2.params
+	var pageCurrent = $("#pageId").data("pageCurrent");
+	if (!pageCurrent)
+		pageCurrent = 1;
+	var params = {
+		"pageCurrent" : pageCurrent
+	};
+	var userName = $("#searchNameId").val();
+	if (userName) {
+		params.userName = userName;
+	}
+	//3.send request 
+	//getJSON底层会向服务端发送异步请求
+	//服务端结果响应到客户端以后会调用function(result){}函数
+	$.getJSON(url, params, function(result) {//jsonResult
+		doHandleResponseResult(result);
+	});
+}
+   
+//处理服务端返回的结果
+function doHandleResponseResult(result) {
+		//console.log(result);
+		if (result.state == 1) {//呈现数据(重点)
+			//将日志记录呈现在本页面的tbody位置
+			doSetTableBodyRows(result.data.records);
+			//将分页信息呈现在分页div中
+			doSetPagination(result.data);
+		} else {
+			alert(result.message);
+		}
+	}
+   
+function doSetTableBodyRows(records) {
+	//1.获取tbody对象,并清空
+	var tBody = $("#tbodyId");
+	tBody.empty();
+	//2.将记录records进行呈现
+	//2.1迭代记录集
+	for (var i = 0; i < records.length; i++) {
+		//2.2 创建tr对象
+		var tr = $("<tr></tr>");
+		//2.3 创建多个td对象
+		var tds = doCreateTds(records[i]);
+		//2.4 将td对象追加到tr中
+		tr.append(tds);
+		//2.5 将tr追加到tbody中
+		tBody.append(tr);
+	}
+}
+
+function doCreateTds(data){
+	   var tds="<td><input type='radio' name='radioId' value='"+data.id+"'></td>"+
+		   	 "<td>"+data.userName+"</td>"+
+		     "<td>"+data.type+"</td>"+
+		     "<td>"+data.tradeName+"</td>"+
+		     "<td>"+data.addTime+"</td>"+
+		     "<td>"+data.purchaseQuantity+"</td>"+
+		     "<td>"+data.payTime+"</td>"+	   
+		     "<td>"+data.payType+"</td>"+	   
+		     "<td>"+data.price+"</td>"+	   
+		     "<td>"+data.distributionLoading+"</td>"+	   
+		     "<td>"+data.orderStatus+"</td>";
+			 return tds;
+}
+
+
+	
+	//-----------------------------------------------------------------------------------------------------------
+	
+	
+	//执行删除操作
+	function doDeleteObjects() {
+		//1.获取选中的记录id
+		var idArray = doGetCheckedIds();
+		if (idArray.length == 0) {
+			alert("请先选择");
+			return;
+		}
+		console.log("idArray", idArray)
+		//2.确认是否删除
+		if (!confirm("确认删除吗"))
+			return;
+		//3.异步执行删除操作
+		//3.1 params
+		var params = {
+			"ids" : idArray.toString()
+		}
+		//3.2 url
+		var url = "order/doDeleteObjects.do";
+		//3.3 request (发送post请求)
+		$.post(url, params, function(result) {
+			if (result.state == 1) {
+				alert(result.message);
+				doSetPageCurrent();
+				doGetObjects();//刷新
+			} else {
+				alert(result.message);
+			}
+		})
+	}
+	   
+	function doGetCheckedIds() {
+		//1.定义一个数组
+		var array = [];
+		//1.获取tbody中类型为checkbox的input元素
+		$("#tbodyId input[name='radioId']")
+		//$("tbody input[name='radioId']:checked").val();
+		//2.迭代这些checkbox元素
+		.each(function() {
+			//3.判定此元素是否被选中
+			//prop函数是用于获取元素中某个属性的值
+			if ($(this).prop("checked")) {
+				//4.将选中的值存储到数组
+				array.push($(this).val());
+			}
+		});
+		//5.返回数组
+		return array;
+	}
+	   
+	 function doSetPageCurrent(){
+    	 var pageCount=$("#pageId").data("pageCount");
+    	 var pageCurrent=$("#pageId").data("pageCurrent");
+    	 var checked=$("#checkAll").prop("checked");
+    	 if(pageCurrent==pageCount&&checked&&pageCurrent>1){
+    		 pageCurrent--;
+    		 $("#pageId").data("pageCurrent",pageCurrent);
+    	 }
+   }
+//------------------------------------------------------------------------------------------------------
+
+
+ function doLoadEditUI(){
+	  //1.定义标题(添加或修改)
+	  var title;
+	  if($(this).hasClass("btn-update")){
+		  title="用户修改";
+		  var id=doGetCheckedId();
+		  $("#mainContentId").data("id",id);
+		  console.log(id);
+		  if (!id){alert("请先选择");}
+		  flag=doFindObjectById(id);
+	  }
+	  if(!flag)return;
+	  //2.异步加载页面
+	  var url="order/doOrderEditUI.do";
+	  $("#mainContentId").load(url,function(){
+		  $(".box-title").html(title);
+	  });
+ };
+ 
+ function doGetCheckedId(){
+	 return $("tbody input[name='radioId']:checked").val();
+	 //$("tbody input[name='radioId']:checked").val();
+	 		//$("#tbodyId input[type='checkbox']")
+  }
+ 
+ function doFindObjectById(id){
+	   var flag=true;
+	   var url="order/doFindObjectById.do";
+	   //获取用户选择的id
+		var params={"id":id};
+	  //根据id执行查询操作
+	   $.ajax({url:url,data:params,async:false,
+			   success:function(result){
+				   console.log(result);
+				 if(result.state==1){
+					$("#mainContentId").data("rowData",result.data);
+				 }else{
+					 alert(result.message);
+					 flag=false;
+				 }
+			 }
+	   });
+	  return flag;
+ }
+
+</script>
+
+
+
+

@@ -1,0 +1,157 @@
+<ul class="pagination pagination-sm no-margin pull-right">
+	<li><a class="selectall">全选</a></li>
+	<li><a class="delete">删除选中的商品</a></li>
+	<li><a class="move">移到我的关注</a></li>
+	<li><a class="empty">清空购物车</a></li>
+	<li><a class="selected">已选中3件商品</a></li>
+	<li><a class="totalprice">总价:¥99.00</a></li>
+	<li><a class="gotopay">去结算</a></li>
+</ul>
+<script type="text/javascript">
+//单击事件
+	$(function(){
+		// 这里给全选添加一个标志,页面加载时执行,只执行了一次
+	    $("#pageId").data("selectall",false);
+		//on 为click 注册多个;//doJumpToPage写括号会立即执行
+		$("#pageId").on("click",".selectall",doChangeTHeadCheckBoxState);
+		$("#pageId").on("click",".delete",doDeleteObjects);
+		$("#pageId").on("click",".empty",doEmpty);
+		$("#pageId").on("click",".move",doMove);
+		$("#pageId").on("click",".gotopay",doGotopay); 
+	});
+	
+	// 选中的移到我的关注
+	function doMove(){
+		//1.获取选中的记录id
+	      var idArray=doGetCheckedIds();
+	      if(idArray.length==0){
+	          alert("请先选择");
+	          return;
+	      }
+	      console.log("idArray",idArray);
+	      //3.异步执行操作
+	      //3.1参数
+	      var params={"ids":idArray.toString()};
+        //url
+        var url="cart/doAddLikes.do";
+        //ajax request
+        var btn=$(this);//获取点击的button对象
+        $.post(url,params,function(result){
+            if(result.state==1){
+                alert(result.message);
+                doGetObjects();//重新查询刷新
+            }else{
+                alert(result.message);
+            }
+        });    
+	}
+    
+    // 去结算
+    function doGotopay(){
+    	console.log("执行结算");
+    	// 其实就是跳转到   插入订单信息(该用户,该订单)
+    	
+    	// ??????? 此处填商品页面?
+        var url="order/dogenerateOrder.do";
+         // 刷新后取选中的商品
+        //3.3获取用,向服务器提交post
+        $.post(url,null,function(result){
+        	alert(result.message);
+        	$("#mainContentId").load("order/doOrderListUI.do");
+        });
+            
+    }
+    
+    // 清空购物车
+    function doEmpty(){
+    	console.log("执行清空");
+    	var url="cart/doEmptyAll.do";
+        //3.3获取用,向服务器提交post
+        $.post(url,null,function(result){//回调函数,结果返回
+            if(result.state==1){
+                alert(result.message);
+                doGetObjects();//刷新
+            }else{
+                alert(result.message);
+            }
+        });
+    	
+    }
+    
+
+  // 全选按钮功能
+  function doChangeTHeadCheckBoxState(){
+	  // 全选和取消全选
+	  if(!$("#pageId").data("selectall")){
+		  $("#pageId").data("selectall",true);
+	  console.log("选中状态:"+$("#pageId").data("selectall"));
+	  }else{
+		  $("#pageId").data("selectall",false);
+	  }
+		  $(".selectall").html($("#pageId").data("selectall")?"取消全选":"全选");
+      //2.修改tbody中checkbox的状态值
+      $("#tbodyId input[type='checkbox']").each(function(){
+          $(this).prop("checked",$("#pageId").data("selectall"));
+      });
+    //刷新选中
+      doChangeCheck();
+  };
+  
+  // 获取选中的checkbox
+  function doGetCheckedIds(){
+      //0.定一个存放的数组
+      var array=[];
+      //1.获取tbody中类型为checkbox的元素
+      $("#tbodyId input[type='checkbox']")
+      //2.迭代这些元素
+      .each(function(){
+          //3.判定此元素是否被选择
+          //prop函数是用于获取元素中某个属性的值
+          if($(this).prop("checked")){
+              //4.将选中的值存入数组
+              array.push($(this).val());
+          }
+      });
+      
+      return array;
+  }
+  
+  
+//执行选中购物车删除删除操作
+  function doDeleteObjects(){
+      //1.获取选中的记录id
+      var idArray=doGetCheckedIds();
+      if(idArray.length==0){
+          alert("请先选择");
+          return;
+      }
+      console.log("idArray",idArray);
+      //2.确认是否删除
+      if(!confirm("确认删除么?")) return;
+      //3.异步执行删除操作
+      //3.1参数
+      var params={"ids":idArray.toString()};
+      console.log(params);
+      //3.2
+      var url="cart/doDeleteObjects.do";
+      //3.3获取用get,向服务器提交post
+      $.post(url,params,function(result){//回调函数,结果返回
+          if(result.state==1){
+              alert(result.message);
+              doGetObjects();//刷新
+          }else{
+              alert(result.message);
+          }
+      });
+  }
+  
+  
+</script>
+
+
+
+
+
+
+
+

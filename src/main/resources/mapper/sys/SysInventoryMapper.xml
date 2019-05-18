@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jx.dao.SysInventoryDao">
+	<resultMap type="com.jx.entity.SysInventory"
+		id="inventoryRM">
+		<id column="id" property="id" />
+		<result column="product_id" property="productId" />
+		<result column="current_count" property="currentCount" />
+		<result column="modified_time" property="modifiedTime" />
+		<result column="sales_volume" property="salesVolume" />
+		<result column="create_time" property="createTime" />
+
+		<!-- <association property="product" javaType="com.jx.sys.entity.SysProduct"> 
+			<id property="id" column="product_id"/> <result column="trade_name" property="trade_name"/> 
+			</association> -->
+	</resultMap>
+
+	<!--查询库存与表 <select id="findInventory" resultMap="inventoryRM"> select i.productId,i.currentCount,i.modifiedTime,i.salesVolume,i.createTime, 
+		p.trade_name from inventory_table i,product_table p where i.product_id=p.id; 
+		</select> -->
+	<select id="findInventory" resultMap="inventoryRM">
+		select *
+		from inventory_table
+		<where>
+			<if test="id!=null and id!=''">
+				id=#{id}
+			</if>
+		</where>
+	</select>
+	<!-- 根据id查询商品表 -->
+	<select id="findInventoryproductById" resultMap="inventoryRM">
+		select *
+		from inventory_table
+		where product_id=#{id}
+	</select>
+	<!-- 分页查询库存表 -->
+
+	<select id="findPageObjects" resultMap="inventoryRM">
+		select *
+		from inventory_table
+		limit #{startIndex},#{pageSize}
+	</select>
+	<!-- 获取库存行数 -->
+	<select id="getRowCount" resultType="int">
+		select count(*) from inventory_table
+	</select>
+	<!-- 删除 -->
+	<update id="deleteObjectById">
+		delete from inventory_table where id=#{id}
+	</update>
+	<!-- 插入新数据 -->
+	<insert id="insertObject"
+		parameterType="com.jx.entity.SysInventory" useGeneratedKeys="true"
+		keyProperty="id">
+		insert into inventory_table
+		(id,product_id,current_count,modified_time,sales_volume)
+		values
+		(null,#{productId},#{currentCount},now(),#{salesVolume})
+	</insert>
+	<!-- 基于id查询库存表 -->
+	<select id="findInventoryById" resultMap="inventoryRM">
+		select *
+		from inventory_table
+		where id=#{id}
+	</select>
+	<!-- 更新库存表 -->
+	<update id="updateObject"
+		parameterType="com.jx.entity.SysInventory">
+		update inventory_table
+		<set>
+			<if test="productId!=null and productId!=''">
+				product_id=#{productId},
+			</if>
+				current_count=#{currentCount},
+				sales_volume=#{salesVolume},
+			modified_time=now()
+		</set>
+		where id=#{id}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+

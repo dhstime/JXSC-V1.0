@@ -1,0 +1,299 @@
+<div class="row">
+	<div class="col-xs-12">
+		<div class="box">
+			<div class="box-header">
+				<h3 class="box-title">购物车</h3>
+
+				<div class="box-tools">
+					<div class="input-group input-group-sm" style="width: 350px;">
+						<input type="text" name="table_search" id="searchNameId"
+							class="form-control pull-right" placeholder="品牌名">
+
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-default btn-search">
+                                <i class="fa fa-search"></i>
+							</button>
+							<button type="button" class="btn btn-default btn-home">主页</button>
+							<button type="button" class="btn btn-default btn-login">登陆</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- /.box-header -->
+			<div class="box-body table-responsive no-padding">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>商品名</th>
+							<th>规格</th>
+							<th>价格</th>
+							<th>数量</th>
+							<th>库存</th>
+							<th>小计</th>
+							<th>操作</th>
+						</tr>
+					</thead>
+					<tbody id="tbodyId"></tbody>
+				</table>
+			</div>
+			<div id="pageId" class="box-footer clearfix">
+			</div>
+			<!-- /.box-body -->
+		</div>
+		<!-- /.box -->
+	</div>
+</div>
+<script type="text/javascript">
+   $(document).ready(function(){
+	   $("#pageId").load("doPayUI.do",function(){
+		   doGetObjects();
+	   });
+	   $(".input-group-btn")
+	   .on("click",".btn-search",doQueryObjects)
+       .on("click",".btn-home",doLoadHomeUI)
+       .on("click",".btn-login",doLoadLoginUI);
+       $("tbody").on("click",".btn-like",doLikeById);
+       $("#tbodyId")
+       .on("click",".btn-delete",doDeleteObject)
+       .on("click","input[type='checkbox']",doChangeCheck);
+   });
+   function doChangeCheck(){
+	   // 修改选中了几件产品
+	   var total = $("input[type='checkbox']:checked").length-1;
+	   $("#pageId .selected").text("已选中"+total+"件商品");
+	   // 修改总价
+	// 修改总价的值
+	   //先清零
+       $("#mainContentId").data("totalprice",0);
+       $("#tbodyId input[type='checkbox']")
+       //2.迭代这些元素
+       .each(function(){
+           //3.判定此元素是否被选择
+           //prop函数是用于获取元素中某个属性的值
+           if($(this).prop("checked")){
+              var tr=$(this).parents("tr");
+        	   // 如果选择了,加在总价上
+        	   $("#mainContentId").data("totalprice",$("#mainContentId").data("totalprice")+tr.data("sprice")*tr.data("quantity"));
+           }
+       });
+       $("#pageId .totalprice").text("总价:¥"+$("#mainContentId").data("totalprice"));
+	   // 修改选中,刷入数据库,再重新查询
+	  var c =  $(this).prop("checked");
+	   console.log(c);
+	   var rowData=$(this).parents("tr").data("rowData");
+       var id=rowData.id;
+	   var params ={"id":id,"checked":(c?1:0)};
+	   var url="cart/doChangeChecked.do";
+	   console.log(params);
+	   $.post(url,params);
+   }
+   
+   function doDeleteObject(){
+	   var rowData=$(this).parents("tr").data("rowData");
+	   var id=rowData.id;
+	   var params={"ids":id};
+	   var url="cart/doDeleteObjects.do";
+	      //3.3获取用get,向服务器提交post
+	      $.post(url,params,function(result){//回调函数,结果返回
+	          if(result.state==1){
+	              alert(result.message);
+	              doGetObjects();//刷新
+	          }else{
+	              alert(result.message);
+	          }
+	      });
+   }
+   
+   // 点击关注按钮,根据id修改islike的值
+     function doLikeById(){
+	       //params
+	       var rowData=$(this).parents("tr").data("rowData");
+	       console.log(rowData);
+	       var id=rowData.id;
+	       var newisLike=rowData.like?0:1;
+	       var params={"id":rowData.id,"islike":newisLike};
+	       console.log(params);
+	       //url
+	       var url="cart/doAddLike.do";
+	       //ajax request
+	       var btn=$(this);//获取点击的button对象
+	       $.post(url,params,function(result){
+	           if(result.state==1){
+	               alert(result.message);
+	               //doGetObjects();//重新查询刷新
+	               //优化方式实现(局部刷新:修改button显示,修改td内容显示)
+	               doEditRow(btn,rowData.like);
+	           }else{
+	               alert(result.message);
+	           }
+	       });    
+	   }    
+	   function doEditRow(obj,like){
+	       //1.修改按钮上的内容
+	       $(obj).html(like?"加入关注":"取消关注");
+	       //3.获取当前行tr对象，然后重新绑定新的值
+	       var tr=$(obj).parents("tr");
+	       var rowData=tr.data("rowData");
+	       rowData.like=like?0:1;
+	       tr.data("rowData",rowData);
+	   }  
+   
+   // 点击登陆按钮,跳转到登陆页面
+   function doLoadLoginUI(){
+	   var url="doLoginUI.do";
+	   $("#mainContentId").load(url);
+   }
+   // 点击主页按钮,跳转到商品主页
+   function doLoadHomeUI(){
+	   
+	   // ??????? 此处填商品页面?????????????
+			   
+	   var url="product/doProductListUI.do";
+       $("#mainContentId").load(url);
+   }
+   //处理查询按钮事件
+   function doQueryObjects(){
+	   doGetObjects();
+   }
+  
+   
+   function doGetCheckedId(){
+	 return $("tbody input[name='radioId']:checked").val();
+   }
+   
+     
+   
+   //页面加载完成异步加载当前页数据
+   function doGetObjects(){
+	   var url="cart/doFindObjects.do";
+	   var params = null;
+	   $.getJSON(url,params,function(result){
+		   /*每次查询完成之后,更新页面的result值,用于传递给结算,生成订单信息*/
+		   $("#tbodyId").data("result",result);
+		   /* console.log("取出的数据:"+result); */
+		   
+		   doHandleResponseResult(result);
+		   //刷新选中
+		   doChangeCheck();
+	   });
+   }
+   function doHandleResponseResult(result){
+	   if(result.state==1){
+		  doSetTableBodyRows(result.data);
+		}else{
+		  alert(result.message);
+	   }
+   }
+   //通过服务端返回的数据初始化页面
+   function doSetTableBodyRows(data){
+	   /* console.log("data:"+data); */
+	  //1.获取tbody对象，并清空内容
+	  var tBody=$("#tbodyId");
+	  tBody.empty();
+	  //2.迭代data内容将数据追加到tbody中
+	  for(var i in data){
+		  var tr=$("<tr></tr>");
+		  tr.data("rowData",data[i]);
+		  var tds=doCreateTds(tr,data[i],i);
+		  tr.append(tds);
+		  tBody.append(tr);
+	  }
+   }
+   function doCreateTds(tr,row,i){
+	   //将单价信息绑定到tr上
+	   tr.data("sprice",row.price);
+	   // 将是否选中信息绑定到tr上
+	   tr.data("checked",row.checked);
+	   tr.data("inventory",row.inventory);
+	   tr.data("quantity",row.quantity);
+	   /* if(tr.data("checked")==1){
+	    $("#mainContentId").data("totalprice",$("#mainContentId").data("totalprice")+row.sum);
+	   } */
+	   console.log(row);
+	   console.log(tr.data("sprice"));
+	   var tds="<td><input type='checkbox' value='"+row.id+"'"+(row.checked?"checked='checked'":null)+" /></td>"+
+	     "<td>"+row.name+"</td>"+
+	     "<td>"+row.model+"</td>"+
+	     "<td>"+row.price+"</td>"+
+	     "<td><input type='button' value='-' onclick='sub(this,"+i+")'/><input type='text' id='num"+i+"' value='"+row.quantity+"' style='width: 30px;text-align: center;' /><input type='button' value='+' onclick='sum(this,"+i+")' /></td>"+
+	     "<td>"+row.inventory+"</td>"+
+	     "<td>"+row.sum+"</td>"+
+	     "<td><button type='button' class='btn btn-default btn-like'>"+(row.like?"取消关注":"加入关注")+"</button><a class='btn-delete'>删除</a></td>"; 
+       return tds;
+   }
+   function sum(obj,i){
+       //1.获取输入框里面的值
+       var inp = document.getElementById("num"+i);
+       var num = inp.value;
+       var tr=$(obj).parents("tr");
+       // 最大也要小于库存
+       if(num<tr.data("inventory")){
+           //2.将数值累加
+           inp.value = ++num;
+           // inp.value = num + 1;//+ 默认拼接符
+           console.log(num);
+    // 获取单价
+       var sprice = tr.data("sprice");
+       console.log(sprice);
+     // 将数量信息绑定到tr上
+       var qua = tr.data("quantity",inp.value);
+       console.log(tr.data("quantity"));
+       // 写入数据库
+       var url = "cart/doupdateQuantity.do";
+       //1.获取tbody中类型为checkbox的元素
+       var id = 0;
+       if(tr.find("input[type='checkbox']").prop("checked")){
+    	   id =  tr.find("input[type='checkbox']").val();
+       // 修改总价的值
+       $("#mainContentId").data("totalprice",$("#mainContentId").data("totalprice")+tr.data("sprice"));
+       $("#pageId .totalprice").text("总价:¥"+$("#mainContentId").data("totalprice"));
+       /* console.log(id);
+       debugger */
+       }
+       var params = {"id":id,"quantity":tr.data("quantity")};
+       $.post(url,params);
+       // 修改小计的值
+       tr.find("td:eq(6)").text(sprice*(tr.data("quantity")));
+       }
+   }
+   
+   function sub(obj,i){
+       //1.获取输入框里面的值
+       var inp = document.getElementById("num"+i);
+       var num = inp.value;
+       if (num>0) {
+           //2.将数值累加
+           inp.value = --num;
+           console.log(num);
+       var tr=$(obj).parents("tr");
+       // 获取单价
+          var sprice = tr.data("sprice");
+          console.log(sprice);
+        // 将数量信息绑定到tr上
+          var qua = tr.data("quantity",inp.value);
+          console.log(tr.data("quantity"));
+       // 写入数据库
+          var url = "cart/doupdateQuantity.do";
+          //1.获取tbody中类型为checkbox的元素
+          var id = 0;
+          if(tr.find("input[type='checkbox']").prop("checked")){
+              id =  tr.find("input[type='checkbox']").val();
+              //修改总价
+	          $("#mainContentId").data("totalprice",$("#mainContentId").data("totalprice")-tr.data("sprice"));
+	          $("#pageId .totalprice").text("总价:¥"+$("#mainContentId").data("totalprice"));
+          /* console.log(id);
+          debugger */
+          }
+          var params = {"id":id,"quantity":tr.data("quantity")};
+          $.post(url,params);
+       // 修改小计的值
+          tr.find("td:eq(6)").text(sprice*(tr.data("quantity")));
+          }
+      }
+   
+</script>
+
+
+
+

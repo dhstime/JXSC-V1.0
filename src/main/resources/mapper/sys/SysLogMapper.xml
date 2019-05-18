@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.db.sys.dao.SysLogDao">
+	<!-- 可重用的片段 -->
+	<sql id="queryWhereId">
+		<where>
+			<if test="username!=null and username!=''">
+				<!-- 没有加@param注解,是动态sql报错,如果只有一个参数,使用:_parameter -->
+				username like concat("%",#{username},"%")
+			</if>
+		</where>
+	</sql>
+
+	<sql id="syscols">id,username,operation,method,params,time,ip,createdTime
+	</sql>
+
+	<!-- 索引失效的情况,解决? -->
+	<select id="getRowCount" resultType="int">
+		select count(*)
+		from sys_logs
+		<include refid="queryWhereId" />
+	</select>
+
+	<select id="findPageObjects"
+		resultType="com.db.sys.entity.SysLog">
+		select
+		<include refid="syscols" />
+		from sys_logs
+		<include refid="queryWhereId" />
+		order by createdTime desc
+		limit #{startIndex},#{pageSize}
+	</select>
+
+	<delete id="deleteObjects">
+		delete from sys_logs where id in
+		<foreach collection="ids" open="(" close=")" separator=","
+			item="id">
+			#{ id }
+		</foreach>
+	</delete>
+	<insert id="insertObject">
+		insert into sys_logs
+		(username,operation,method,params,time,ip,createdTime)
+		values
+		(#{username},#{operation},#{method},#{params},#{time},#{ip},#{createdTime})
+	</insert>
+</mapper>
